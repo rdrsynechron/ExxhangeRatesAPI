@@ -17,7 +17,7 @@ public class ExchangeRatesApiExceptionHandler {
 	
 	@ResponseBody
 	@ExceptionHandler(value = Exception.class)
-	private ResponseEntity handleAnyOtherExceptions(Exception exception){
+	public ResponseEntity handleAnyOtherExceptions(Exception exception){
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(exception.getMessage());
 	}
 

@@ -16,7 +16,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @SpringBootApplication
-//@EnableSwagger2
+@EnableSwagger2
 @EnableJpaRepositories
 public class ExchangeratesapiApplication {
 
@@ -29,7 +29,7 @@ public class ExchangeratesapiApplication {
 		return new RestTemplate();
 	}
 
-	/*@Bean
+	@Bean
 	public Docket api() {
 		return new Docket(DocumentationType.SWAGGER_2).select()
 				.apis(RequestHandlerSelectors.basePackage("com.synechron")).paths(PathSelectors.any()).build()
@@ -40,5 +40,4 @@ public class ExchangeratesapiApplication {
 		return new ApiInfo("Exchange Rates API", "It gives historical and current exchange rates for different currencies against the Euro", "1.0", "", null, "", "",
 				Collections.EMPTY_LIST);
 	}
-*/
 }

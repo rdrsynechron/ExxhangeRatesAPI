@@ -26,8 +26,7 @@ public class ExchangeRatesDAOImpl implements ExchangeRatesDAO {
 		ExchangeRatesDataEntity exchangeRatesDataEntity = new ExchangeRatesDataEntity();
 		exchangeRatesDataEntity.setExchangeRates(response);
 		exchangeRatesDataEntity.setGivenDate(java.sql.Date.valueOf(givenDate));
-		exchangeRatesRepository.save(exchangeRatesDataEntity);
-		return exchangeRatesDataEntity.getRatingId();
+		return exchangeRatesRepository.save(exchangeRatesDataEntity).getRatingId();
 	}
 
 	@Override

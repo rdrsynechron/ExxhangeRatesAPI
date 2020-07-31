@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.synechron.exchangeratesapi.dao.ExchangeRatesDAO;
@@ -25,6 +24,10 @@ import com.synechron.exchangeratesapi.exception.ExchangeRatesApiException;
 import com.synechron.exchangeratesapi.exception.ExchangeRatesNotFoundException;
 import com.synechron.exchangeratesapi.service.ExchangeRatesService;
 import com.synechron.exchangeratesapi.util.ExchangeRatesApiConstants;
+
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 
 @Service
 public class ExchangeRatesServiceImpl implements ExchangeRatesService {
@@ -40,6 +43,8 @@ public class ExchangeRatesServiceImpl implements ExchangeRatesService {
 	@Autowired
 	private ExchangeRatesDAO exchangeRatesDao;
 
+	@CircuitBreaker(name = "exchangeRates")
+	@Retry(name="exchangeRates", fallbackMethod = "loadDataFallback")
 	@Override
 	public void loadDataFromRatesAPI() {
 
@@ -67,7 +72,14 @@ public class ExchangeRatesServiceImpl implements ExchangeRatesService {
 		}
 
 	}
+	
+	public void loadDataFallback(CallNotPermittedException exception) {
+		LOGGER.info("LoadData fallback method: Due to unavailability of RatesApi");
+		throw new ExchangeRatesApiException("Rates API Service is Not Available right now! Please try after sometime!!", exception);
+	}
 
+	@CircuitBreaker(name="exchangeRates")
+	@Retry(name="exchangeRates", fallbackMethod="getExchangeRatesBygivenDateFallback")
 	@Override
 	public String getExchangeRatesBygivenDate(String givenDate) {
 		LocalDate date;
@@ -75,19 +87,24 @@ public class ExchangeRatesServiceImpl implements ExchangeRatesService {
 		String exchangeRates = "";
 		try {
 			date = LocalDate.parse(givenDate);
-			exchangeRates = gson.toJson(exchangeRatesDao
-					.getRatesByGivenDate(java.sql.Date.valueOf(date.withDayOfMonth(1))).getExchangeRates());
-			if (Strings.isNullOrEmpty(exchangeRates)) {
+			exchangeRates = exchangeRatesDao
+					.getRatesByGivenDate(java.sql.Date.valueOf(date.withDayOfMonth(1))).getExchangeRates();
+			if (null == exchangeRates || exchangeRates.isEmpty()) {
 				LOGGER.error("No Exchange Rates found for the given date: {}", givenDate);
 				throw new ExchangeRatesNotFoundException("No Exchange Rates found for the given date: " + givenDate,
 						null);
 			}
-		} catch (Exception exception) {
+		} catch (RuntimeException exception) {
 			LOGGER.error("Exception occured while getting data from rates API for he givenDate: {} - {}", givenDate,
 					exception.getMessage());
 			throw new ExchangeRatesApiException("Exception occured while loading data from rates API", exception);
 		}
 		return exchangeRates;
+	}
+	
+	public String getExchangeRatesBygivenDateFallback(String givenDate, CallNotPermittedException exception) {
+		LOGGER.info("Get ExchangeRates By GivenDate fallback method: Due to unavailability of RatesApi");
+		throw new ExchangeRatesApiException("Rates API Service is Not Available right now! Please try after sometime!!", exception);
 	}
 
 }
